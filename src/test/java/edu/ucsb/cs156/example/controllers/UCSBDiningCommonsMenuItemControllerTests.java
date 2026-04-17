@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -25,6 +26,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MvcResult;
@@ -193,5 +195,84 @@ public class UCSBDiningCommonsMenuItemControllerTests extends ControllerTestCase
     Map<String, Object> json = responseToJson(response);
     assertEquals("EntityNotFoundException", json.get("type"));
     assertEquals("DiningCommonsMenuItem with id 7 not found", json.get("message"));
+  }
+
+  @WithMockUser(roles = {"ADMIN", "USER"})
+  @Test
+  public void admin_can_edit_an_existing_menuitem() throws Exception {
+    DiningCommonsMenuItem original =
+        DiningCommonsMenuItem.builder()
+            .id(67L)
+            .station("station 1")
+            .diningCommonsCode("de-la-guerra")
+            .name("item 1")
+            .build();
+
+    DiningCommonsMenuItem edited =
+        DiningCommonsMenuItem.builder()
+            .id(67L)
+            .station("an entirely new, cooler station")
+            .diningCommonsCode("carillo")
+            .name("still item 1!")
+            .build();
+
+    // arrange
+
+    when(diningCommonsMenuItemRepository.findById(eq(67L))).thenReturn(Optional.of(original));
+
+    // act
+    MvcResult response =
+        mockMvc
+            .perform(
+                put("/api/ucsbdiningcommonsmenuitem")
+                    .param("id", "67")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .characterEncoding("utf-8")
+                    .content(mapper.writeValueAsString(edited))
+                    .with(csrf()))
+            .andExpect(status().isOk())
+            .andReturn();
+
+    // assert
+    verify(diningCommonsMenuItemRepository, times(1)).findById(67L);
+    verify(diningCommonsMenuItemRepository, times(1))
+        .save(edited); // should be saved with correct user
+    DiningCommonsMenuItem savedItem =
+        mapper.readValue(response.getResponse().getContentAsString(), DiningCommonsMenuItem.class);
+    assertEquals(edited, savedItem);
+  }
+
+  @WithMockUser(roles = {"ADMIN", "USER"})
+  @Test
+  public void admin_cannot_edit_menu_item_that_does_not_exist() throws Exception {
+    // arrange
+
+    DiningCommonsMenuItem edited =
+        DiningCommonsMenuItem.builder()
+            .id(67L)
+            .station("an entirely new, cooler station")
+            .diningCommonsCode("carillo")
+            .name("still item 1!")
+            .build();
+
+    when(diningCommonsMenuItemRepository.findById(eq(67L))).thenReturn(Optional.empty());
+
+    // act
+    MvcResult response =
+        mockMvc
+            .perform(
+                put("/api/ucsbdiningcommonsmenuitem")
+                    .param("id", "67")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .characterEncoding("utf-8")
+                    .content(mapper.writeValueAsString(edited))
+                    .with(csrf()))
+            .andExpect(status().isNotFound())
+            .andReturn();
+
+    // assert
+    verify(diningCommonsMenuItemRepository, times(1)).findById(67L);
+    Map<String, Object> json = responseToJson(response);
+    assertEquals("DiningCommonsMenuItem with id 67 not found", json.get("message"));
   }
 }

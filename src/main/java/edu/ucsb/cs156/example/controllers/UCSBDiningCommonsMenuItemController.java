@@ -6,9 +6,12 @@ import edu.ucsb.cs156.example.repositories.DiningCommonsMenuItemRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -74,6 +77,33 @@ public class UCSBDiningCommonsMenuItemController extends ApiController {
         diningCommonsMenuItemRepository
             .findById(id)
             .orElseThrow(() -> new EntityNotFoundException(DiningCommonsMenuItem.class, id));
+    return menuItem;
+  }
+
+  /**
+   * Update a Menu Item
+   *
+   * @param id id of the Menu Item to update
+   * @param incoming the new Menu Item
+   * @return the updated Menu Item
+   */
+  @Operation(summary = "Update a single Menu Item")
+  @PreAuthorize("hasRole('ROLE_ADMIN')")
+  @PutMapping("")
+  public DiningCommonsMenuItem updateMenuItem(
+      @Parameter(name = "id") @RequestParam Long id,
+      @RequestBody @Valid DiningCommonsMenuItem incoming) {
+
+    DiningCommonsMenuItem menuItem =
+        diningCommonsMenuItemRepository
+            .findById(id)
+            .orElseThrow(() -> new EntityNotFoundException(DiningCommonsMenuItem.class, id));
+
+    menuItem.setName(incoming.getName());
+    menuItem.setStation(incoming.getStation());
+    menuItem.setDiningCommonsCode(incoming.getDiningCommonsCode());
+
+    diningCommonsMenuItemRepository.save(menuItem);
     return menuItem;
   }
 }
