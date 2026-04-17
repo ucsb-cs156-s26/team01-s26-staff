@@ -1,0 +1,62 @@
+{
+  "databaseChangeLog": [
+    {
+      "changeSet": {
+        "id": "Restaurants-1",
+        "author": "Division7",
+        "preConditions": [
+          {
+            "onFail": "MARK_RAN"
+          },
+          {
+            "not": [
+              {
+                "tableExists": {
+                  "tableName": "DINING_COMMONS_MENU_ITEM"
+                }
+              }
+            ]
+          }
+        ],
+        "changes": [
+          {
+            "createTable": {
+              "columns": [
+                {
+                  "column": {
+                    "autoIncrement": true,
+                    "constraints": {
+                      "primaryKey": true,
+                      "primaryKeyName": "DINING_COMMONS_MENU_ITEM_PK"
+                    },
+                    "name": "ID",
+                    "type": "BIGINT"
+                  }
+                },
+                {
+                  "column": {
+                    "name": "DINING_COMMONS_CODE",
+                    "type": "VARCHAR(255)"
+                  }
+                },
+                {
+                  "column": {
+                    "name": "NAME",
+                    "type": "VARCHAR(255)"
+                  }
+                },
+                {
+                  "column": {
+                    "name": "STATION",
+                    "type": "VARCHAR(255)"
+                  }
+                }
+              ],
+              "tableName": "DINING_COMMONS_MENU_ITEM"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
