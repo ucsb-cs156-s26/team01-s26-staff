@@ -20,6 +20,14 @@ public class UCSBDiningCommonsMenuItemController {
     this.diningCommonsMenuItemRepository = diningCommonsMenuItemRepository;
   }
 
+  /**
+   * Post a new Menu Item
+   *
+   * @param diningCommonsCode the code of the dining commons
+   * @param name the name of the menu item
+   * @param station the station where the menu item is located
+   * @return the created {@link DiningCommonsMenuItem}
+   */
   @PostMapping("/post")
   @PreAuthorize("hasRole('ROLE_ADMIN')")
   public DiningCommonsMenuItem postMenuItem(
@@ -36,6 +44,11 @@ public class UCSBDiningCommonsMenuItemController {
     return diningCommonsMenuItemRepository.save(item);
   }
 
+  /**
+   * Get all Menu Items
+   *
+   * @return a list of all {@link DiningCommonsMenuItem}
+   */
   @GetMapping("/all")
   @PreAuthorize("hasRole('ROLE_USER')")
   public Iterable<DiningCommonsMenuItem> allMenuItems() {
