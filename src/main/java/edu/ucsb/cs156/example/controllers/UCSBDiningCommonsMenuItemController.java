@@ -2,6 +2,7 @@ package edu.ucsb.cs156.example.controllers;
 
 import edu.ucsb.cs156.example.entities.DiningCommonsMenuItem;
 import edu.ucsb.cs156.example.repositories.DiningCommonsMenuItemRepository;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "UCSBDiningCommonsMenuItem")
 @RestController
 @RequestMapping("/api/ucsbdiningcommonsmenuitem")
 public class UCSBDiningCommonsMenuItemController {
