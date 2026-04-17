@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -105,5 +106,24 @@ public class UCSBDiningCommonsMenuItemController extends ApiController {
 
     diningCommonsMenuItemRepository.save(menuItem);
     return menuItem;
+  }
+
+  /**
+   * Delete a {@link DiningCommonsMenuItem}
+   *
+   * @param id the id of the DiningCommonsMenuItem to delete
+   * @return a message indicating the DiningCommonsMenuItem was deleted
+   */
+  @Operation(summary = "Delete a DiningCommonsMenuItem")
+  @PreAuthorize("hasRole('ROLE_ADMIN')")
+  @DeleteMapping("")
+  public Object deleteDiningCommonsMenuItem(@Parameter(name = "id") @RequestParam Long id) {
+    DiningCommonsMenuItem item =
+        diningCommonsMenuItemRepository
+            .findById(id)
+            .orElseThrow(() -> new EntityNotFoundException(DiningCommonsMenuItem.class, id));
+
+    diningCommonsMenuItemRepository.delete(item);
+    return genericMessage("DiningCommonsMenuItem with id %s deleted".formatted(id));
   }
 }
