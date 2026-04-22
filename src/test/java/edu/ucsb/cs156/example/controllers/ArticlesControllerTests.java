@@ -1,6 +1,7 @@
 package edu.ucsb.cs156.example.controllers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -278,6 +279,60 @@ public class ArticlesControllerTests extends ControllerTestCase {
                     .characterEncoding("utf-8")
                     .content(requestBody)
                     .with(csrf()))
+            .andExpect(status().isNotFound())
+            .andReturn();
+
+    // assert
+    verify(articlesRepository, times(1)).findById(67L);
+    Map<String, Object> json = responseToJson(response);
+    assertEquals("Articles with id 67 not found", json.get("message"));
+  }
+
+  @WithMockUser(roles = {"ADMIN", "USER"})
+  @Test
+  public void admin_can_delete_a_article() throws Exception {
+    // arrange
+
+    LocalDateTime ldt1 = LocalDateTime.parse("2022-01-03T00:00:00");
+
+    Articles articles1 =
+        Articles.builder()
+            .title("article1")
+            .url("https://www.example.com/article1")
+            .explanation("This is the first article")
+            .email("user@example.com")
+            .dateAdded(ldt1)
+            .build();
+
+    when(articlesRepository.findById(eq(67L))).thenReturn(Optional.of(articles1));
+
+    // act
+    MvcResult response =
+        mockMvc
+            .perform(delete("/api/articles?id=67").with(csrf()))
+            .andExpect(status().isOk())
+            .andReturn();
+
+    // assert
+    verify(articlesRepository, times(1)).findById(67L);
+    verify(articlesRepository, times(1)).delete(any());
+
+    Map<String, Object> json = responseToJson(response);
+    assertEquals("Articles with id 67 deleted", json.get("message"));
+  }
+
+  @WithMockUser(roles = {"ADMIN", "USER"})
+  @Test
+  public void admin_tries_to_delete_non_existant_articles_and_gets_right_error_message()
+      throws Exception {
+    // arrange
+
+    when(articlesRepository.findById(eq(67L))).thenReturn(Optional.empty());
+
+    // act
+    MvcResult response =
+        mockMvc
+            .perform(delete("/api/articles?id=67").with(csrf()))
             .andExpect(status().isNotFound())
             .andReturn();
 
