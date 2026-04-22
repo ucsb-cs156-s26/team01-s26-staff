@@ -1,0 +1,136 @@
+package edu.ucsb.cs156.example.controllers;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import edu.ucsb.cs156.example.ControllerTestCase;
+import edu.ucsb.cs156.example.entities.DiningCommonsMenuItem;
+import edu.ucsb.cs156.example.repositories.DiningCommonsMenuItemRepository;
+import edu.ucsb.cs156.example.repositories.UserRepository;
+import edu.ucsb.cs156.example.testconfig.TestConfig;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MvcResult;
+
+@WebMvcTest(UCSBDiningCommonsMenuItemController.class)
+@Import(TestConfig.class)
+public class UCSBDiningCommonsMenuItemControllerTests extends ControllerTestCase {
+
+  @MockitoBean private DiningCommonsMenuItemRepository diningCommonsMenuItemRepository;
+
+  @MockitoBean UserRepository userRepository;
+
+  @WithMockUser(roles = {"USER"})
+  @Test
+  public void logged_in_user_can_get_all_menu_items() throws Exception {
+
+    DiningCommonsMenuItem item1 =
+        DiningCommonsMenuItem.builder()
+            .name("item 1")
+            .diningCommonsCode("station 1")
+            .diningCommonsCode("de-la-guerra")
+            .build();
+
+    DiningCommonsMenuItem item2 =
+        DiningCommonsMenuItem.builder()
+            .name("item 2")
+            .diningCommonsCode("station 2")
+            .diningCommonsCode("carrillo")
+            .build();
+
+    ArrayList<DiningCommonsMenuItem> expectedItems = new ArrayList<>(Arrays.asList(item1, item2));
+
+    when(diningCommonsMenuItemRepository.findAll()).thenReturn(expectedItems);
+
+    MvcResult response =
+        mockMvc
+            .perform(get("/api/ucsbdiningcommonsmenuitem/all"))
+            .andExpect(status().isOk())
+            .andReturn();
+
+    verify(diningCommonsMenuItemRepository, times(1)).findAll();
+    List<DiningCommonsMenuItem> retrievedItems =
+        mapper.readValue(response.getResponse().getContentAsString(), new TypeReference<>() {});
+
+    assertTrue(retrievedItems.containsAll(expectedItems));
+  }
+
+  @WithMockUser(roles = {"ADMIN", "USER"})
+  @Test
+  public void admin_can_post_new_menu_item() throws Exception {
+    // arrange
+
+    DiningCommonsMenuItem item =
+        DiningCommonsMenuItem.builder()
+            .name("item 1")
+            .station("station 1")
+            .diningCommonsCode("de-la-guerra")
+            .build();
+
+    when(diningCommonsMenuItemRepository.save(eq(item))).thenReturn(item);
+
+    // act
+    MvcResult response =
+        mockMvc
+            .perform(
+                post("/api/ucsbdiningcommonsmenuitem/post")
+                    .with(csrf())
+                    .param("name", "item 1")
+                    .param("station", "station 1")
+                    .param("diningCommonsCode", "de-la-guerra"))
+            .andExpect(status().isOk())
+            .andReturn();
+
+    // assert
+    verify(diningCommonsMenuItemRepository, times(1)).save(item);
+    String expectedJson = mapper.writeValueAsString(item);
+    String responseString = response.getResponse().getContentAsString();
+    assertEquals(expectedJson, responseString);
+  }
+
+  @Test
+  public void logged_out_users_cannot_get_all() throws Exception {
+    mockMvc
+        .perform(get("/api/ucsbdiningcommonsmenuitem/all"))
+        .andExpect(status().is(403)); // logged out users can't get all
+  }
+
+  @WithMockUser(roles = {"USER"})
+  @Test
+  public void logged_in_users_can_get_all() throws Exception {
+    mockMvc
+        .perform(get("/api/ucsbdiningcommonsmenuitem/all"))
+        .andExpect(status().is(200)); // logged
+  }
+
+  // Authorization tests for /api/ucsbdiningcommonsmenuitem/post
+  // (Perhaps should also have these for put and delete)
+
+  @Test
+  public void logged_out_users_cannot_post() throws Exception {
+    mockMvc.perform(post("/api/ucsbdiningcommonsmenuitem/post")).andExpect(status().is(403));
+  }
+
+  @WithMockUser(roles = {"USER"})
+  @Test
+  public void logged_in_regular_users_cannot_post() throws Exception {
+    mockMvc
+        .perform(post("/api/ucsbdiningcommonsmenuitem/post"))
+        .andExpect(status().is(403)); // only admins can post
+  }
+}
