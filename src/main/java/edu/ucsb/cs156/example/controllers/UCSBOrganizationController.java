@@ -41,7 +41,7 @@ public class UCSBOrganizationController extends ApiController {
    *
    * @param orgCode org code of the organization
    * @param orgTranslationShort translation of the organization's name
-   * @param orgTranslationLong translation of the organization's full name
+   * @param orgTranslation translation of the organization's full name
    * @param inactive whether the organization is inactive
    * @return the save organization
    */
