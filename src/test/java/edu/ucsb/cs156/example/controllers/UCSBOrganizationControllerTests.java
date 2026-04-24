@@ -16,6 +16,8 @@ import edu.ucsb.cs156.example.repositories.UserRepository;
 import edu.ucsb.cs156.example.testconfig.TestConfig;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -27,7 +29,7 @@ import org.springframework.test.web.servlet.MvcResult;
 @Import(TestConfig.class)
 public class UCSBOrganizationControllerTests extends ControllerTestCase {
 
-  @MockitoBean UCSBOrganizationRepository UCSBOrganizationRepository;
+  @MockitoBean UCSBOrganizationRepository ucsbOrganizationRepository;
 
   @MockitoBean UserRepository userRepository;
 
@@ -48,6 +50,13 @@ public class UCSBOrganizationControllerTests extends ControllerTestCase {
         .andExpect(status().is(200)); // logged in users can get all
   }
 
+  @Test
+  public void logged_out_users_cannot_get_by_id() throws Exception {
+    mockMvc
+        .perform(get("/api/ucsborganization?orgCode=zpr"))
+        .andExpect(status().is(403)); // logged out users can't get by id
+  }
+
   // Authorization tests for /api/UCSBOrganization/post
   // (Perhaps should also have these for put and delete)
 
@@ -62,6 +71,62 @@ public class UCSBOrganizationControllerTests extends ControllerTestCase {
     mockMvc
         .perform(post("/api/ucsborganization/post"))
         .andExpect(status().is(403)); // only admins can post
+  }
+
+  // Tests with mocks for database actions
+
+  @WithMockUser(roles = {"USER"})
+  @Test
+  public void test_that_logged_in_user_can_get_by_id_when_the_id_exists() throws Exception {
+
+    // arrange
+
+    UCSBOrganization zpr =
+        UCSBOrganization.builder()
+            .orgCode("ZPR")
+            .orgTranslationShort("Zeta Phi Rho")
+            .orgTranslation("Zeta Phi Rho Fraternity")
+            .inactive(false)
+            .build();
+
+    when(ucsbOrganizationRepository.findById(eq("zpr"))).thenReturn(Optional.of(zpr));
+
+    // act
+    MvcResult response =
+        mockMvc
+            .perform(get("/api/ucsborganization?orgCode=zpr"))
+            .andExpect(status().isOk())
+            .andReturn();
+
+    // assert
+
+    verify(ucsbOrganizationRepository, times(1)).findById(eq("zpr"));
+    String expectedJson = mapper.writeValueAsString(zpr);
+    String responseString = response.getResponse().getContentAsString();
+    assertEquals(expectedJson, responseString);
+  }
+
+  @WithMockUser(roles = {"USER"})
+  @Test
+  public void test_that_logged_in_user_can_get_by_id_when_the_id_does_not_exist() throws Exception {
+
+    // arrange
+
+    when(ucsbOrganizationRepository.findById(eq("munger-hall"))).thenReturn(Optional.empty());
+
+    // act
+    MvcResult response =
+        mockMvc
+            .perform(get("/api/ucsborganization?orgCode=munger-hall"))
+            .andExpect(status().isNotFound())
+            .andReturn();
+
+    // assert
+
+    verify(ucsbOrganizationRepository, times(1)).findById(eq("munger-hall"));
+    Map<String, Object> json = responseToJson(response);
+    assertEquals("EntityNotFoundException", json.get("type"));
+    assertEquals("UCSBOrganization with id munger-hall not found", json.get("message"));
   }
 
   // Tests with mocks for database actions
@@ -91,7 +156,7 @@ public class UCSBOrganizationControllerTests extends ControllerTestCase {
     ArrayList<UCSBOrganization> expectedOrgs = new ArrayList<>();
     expectedOrgs.addAll(Arrays.asList(zpr, sky));
 
-    when(UCSBOrganizationRepository.findAll()).thenReturn(expectedOrgs);
+    when(ucsbOrganizationRepository.findAll()).thenReturn(expectedOrgs);
 
     // act
     MvcResult response =
@@ -99,7 +164,7 @@ public class UCSBOrganizationControllerTests extends ControllerTestCase {
 
     // assert
 
-    verify(UCSBOrganizationRepository, times(1)).findAll();
+    verify(ucsbOrganizationRepository, times(1)).findAll();
     String expectedJson = mapper.writeValueAsString(expectedOrgs);
     String responseString = response.getResponse().getContentAsString();
     assertEquals(expectedJson, responseString);
@@ -118,7 +183,7 @@ public class UCSBOrganizationControllerTests extends ControllerTestCase {
             .inactive(true)
             .build();
 
-    when(UCSBOrganizationRepository.save(eq(zpr))).thenReturn(zpr);
+    when(ucsbOrganizationRepository.save(eq(zpr))).thenReturn(zpr);
 
     // act
     MvcResult response =
@@ -130,7 +195,7 @@ public class UCSBOrganizationControllerTests extends ControllerTestCase {
             .andReturn();
 
     // assert
-    verify(UCSBOrganizationRepository, times(1)).save(zpr);
+    verify(ucsbOrganizationRepository, times(1)).save(zpr);
     String expectedJson = mapper.writeValueAsString(zpr);
     String responseString = response.getResponse().getContentAsString();
     assertEquals(expectedJson, responseString);
