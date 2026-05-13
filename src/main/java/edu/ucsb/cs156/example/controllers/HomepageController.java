@@ -35,7 +35,7 @@ public class HomepageController {
         ? """
       <li><a href="/logout">Logout</a></li>"""
         : """
-      <li><a href="/oauth2/authorization/google">Login</a></li>""";
+      <li><a href="/oauth2/authorization/federate">Login</a></li>""";
   }
 
   private String getLoggedInAs() {
