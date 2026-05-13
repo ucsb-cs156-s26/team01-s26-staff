@@ -67,7 +67,7 @@ public class CurrentUserServiceImpl extends CurrentUserService {
     String fullName = oAuthUser.getAttribute("name");
     String givenName = oAuthUser.getAttribute("given_name");
     String familyName = oAuthUser.getAttribute("family_name");
-    boolean emailVerified = oAuthUser.getAttribute("email_verified");
+    boolean emailVerified = Boolean.TRUE.equals(oAuthUser.getAttribute("email_verified"));
     String locale = oAuthUser.getAttribute("locale");
     String hostedDomain = oAuthUser.getAttribute("hd");
 

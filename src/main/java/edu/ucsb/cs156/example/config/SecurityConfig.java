@@ -70,8 +70,14 @@ public class SecurityConfig {
             handling -> handling.authenticationEntryPoint(new Http403ForbiddenEntryPoint()))
         .oauth2Login(
             oauth2 ->
-                oauth2.userInfoEndpoint(
-                    userInfo -> userInfo.userAuthoritiesMapper(this.userAuthoritiesMapper())))
+                oauth2
+                    .userInfoEndpoint(
+                        userInfo -> userInfo.userAuthoritiesMapper(this.userAuthoritiesMapper()))
+                    .failureHandler(
+                        (request, response, error) -> {
+                          System.out.println("error = " + error);
+                          response.sendError(500);
+                        }))
         .csrf(
             csrf ->
                 csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
